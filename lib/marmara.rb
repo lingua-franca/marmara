@@ -5,10 +5,15 @@ module Marmara
   TMP_FILE = File.join(Dir.tmpdir, 'marmara.json')
 
   class << self
-    attr_accessor :output_directory
+    def output_directory
+      @output_directory || 'log/css'
+    end
+
+    def output_directory=(dir)
+      @output_directory = dir
+    end
 
     def start_recording
-      @output_directory ||= 'log/css'
       FileUtils.rm_rf(output_directory)
       FileUtils.mkdir_p(output_directory)
       FileUtils.rm(TMP_FILE) if File.exists?(TMP_FILE)
@@ -25,6 +30,23 @@ module Marmara
       return ENV['_marmara_record'] == '1'
     end
 
+    def record(driver)
+      @last_driver = driver
+      result = driver.evaluate_script(get_mached_css_rules)
+      old_results = File.exists?(TMP_FILE) ? JSON.parse(File.read(TMP_FILE), quirks_mode: true) : {'sheets' => [], 'rules' => []}
+      old_results['sheets'] += result['sheets']
+      old_results['rules'] += result['rules']
+      old_results['sheets'].uniq!
+      old_results['rules'].uniq!
+      File.open(TMP_FILE, 'wb') { |f| f.write(old_results.to_json) }
+    end
+
+  private
+
+    def get_style_sheet_html
+      @style_sheet_html ||= File.read(File.join(File.dirname(__FILE__), 'marmara', 'style-sheet.html'))
+    end
+
     def get_mached_css_rules
       @get_mached_css_rules_js ||= File.read(File.join(File.dirname(__FILE__), 'marmara', 'get-matched-css-rules.js'))
     end
@@ -33,20 +55,14 @@ module Marmara
       @normalize_rule_js ||= File.read(File.join(File.dirname(__FILE__), 'marmara', 'normalize-rule.js'))
     end
 
-    def record(driver)
-      @last_driver = driver
-      result = driver.evaluate_script(get_mached_css_rules)
-      old_results = File.exists?(TMP_FILE) ? JSON.parse(File.read(TMP_FILE)) : {'sheets' => [], 'rules' => []}
-      old_results['sheets'] += result['sheets']
-      old_results['rules'] += result['rules']
-      old_results['sheets'].uniq!
-      old_results['rules'].uniq!
-      File.open(TMP_FILE, 'w') { |f| f.write old_results.to_json }
-    end
-
     def normalize_rule(rule)
-      script = "#{normalize_rule_js}('#{rule.gsub(/\n/, ' ').gsub(/\'/, '\\')}')"
-      @last_driver.evaluate_script(script)
+      script = "#{normalize_rule_js}('#{rule.gsub(/\n/, ' ').gsub(/\'/, "\\\\\'").force_encoding('UTF-8')}')"
+      begin
+        @last_driver.evaluate_script(script)
+      rescue Exception => e
+        puts e.to_s
+        puts script
+      end
     end
 
     def get_rule(str)
@@ -59,10 +75,11 @@ module Marmara
     end
 
     def analyze
-      results = File.exists?(TMP_FILE) ? JSON.parse(File.read(TMP_FILE)) : {'sheets' => [], 'rules' => []}
+      # load the cached results
+      results = File.exists?(TMP_FILE) ? JSON.parse(File.read(TMP_FILE), quirks_mode: true) : {'sheets' => [], 'rules' => []}
 
+      # parse matched rules
       rules = []
-      sheets = CssParser::Parser.new
       results['rules'].each do |rule|
         parser = CssParser::Parser.new
         parser.load_string!(rule)
@@ -74,11 +91,16 @@ module Marmara
         end
       end
 
-      covered_rules = Set.new
+      # collect all of the rules indexes that were covered
+      covered_rules = Set.new # use a set so that we get unique values
+      # collect all of the sheets so that we can calculate rule coverage
+      sheets = CssParser::Parser.new
 
+      # go through all of the style sheets found
       results['sheets'].each do |uri|
         sheet_covered_rules = []
         
+        # download the style sheet
         original_sheet = nil
         open_attempts = 0
         begin
@@ -93,7 +115,7 @@ module Marmara
         if original_sheet
           sheets.load_uri!(uri)
           # take comments out of the equation
-          sheet = original_sheet.gsub(/(\/\*.*?\*\/)/m) { |m| ' ' * m.length }
+          sheet = original_sheet.gsub(/(\/\*.*?\*\/|@(?:charset|import)\s+.*?;)/m) { |m| ' ' * m.length }
 
           rules.each_with_index do |rule, index|
             rule_regex = rule[:set].selectors.collect { |sel| Regexp.escape(sel) }.join('\s*,\s*') + '\s*\{.*?\}'
@@ -120,42 +142,22 @@ module Marmara
             }
           end
 
+          original_sheet.scan(Regexp.new('(@media.*?\{).*?\}\s*(\})', Regexp::IGNORECASE | Regexp::MULTILINE)) do |match|
+            offset = Regexp.last_match.offset(1)
+            sheet_covered_rules << {
+              rule: match[1],
+              offset: offset,
+              state: :ignored
+            }
+            offset = Regexp.last_match.offset(2)
+            sheet_covered_rules << {
+              rule: match[2],
+              offset: offset,
+              state: :ignored
+            }
+          end
+
           sheet_covered_rules.sort_by! { |r| r[:offset].first }
-          style = '<style type="text/css">
-          body {
-              margin: 0;
-              padding 1em;
-              font-size: 16px;
-              background-color: #FBF3E9;
-          }
-          #code {
-              white-space: nowrap;
-          }
-          #lines {
-            float: left;
-            padding: 0 0.5em;
-            text-align: right;
-            border-right: 0.1em solid #888;
-            background-color: #7ADEFF;
-            font-weight: bold;
-            color: rgba(0,0,0,0.333);
-          }
-          pre {
-              display: inline;
-              margin: 0;
-              padding: 0.25em 0;
-              line-height: 1.7em;
-          }
-          .covered {
-            background-color: rgba(143, 188, 143, 0.5);
-          }
-          .not-covered {
-            background-color: rgba(244, 67, 54, 0.5);
-          }
-          .ignored {
-            color: #888;
-          }
-          </style>'
 
           states = {
             covered: '<pre class="covered">',
@@ -176,17 +178,7 @@ module Marmara
           sheet_html.gsub!(/\n/, '<br>')
           lines = (1..original_sheet.lines.count).to_a.join("\n")
           File.open(File.join(output_directory, File.basename(uri) + '.html'), 'wb') do |f|
-            f.write("
-              <!DOCTYPE html>
-              <html>
-                <head>#{style}</head>
-                <body>
-                  <div id=\"lines\">
-                    <pre>#{lines}</pre>
-                  </div>
-                  <div id=\"code\">#{sheet_html}</div>
-                </body>
-              </html>")
+            f.write(get_style_sheet_html.gsub('%{lines}', lines).gsub('%{style_sheet}', sheet_html))
           end
         end
       end

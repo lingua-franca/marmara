@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style type="text/css">
+      body {
+          margin: 0;
+          padding 1em;
+          font-size: 16px;
+          background-color: #FBF3E9;
+      }
+      #code {
+          white-space: nowrap;
+      }
+      #lines {
+        float: left;
+        padding: 0 0.5em;
+        text-align: right;
+        border-right: 0.1em solid #888;
+        background-color: #7ADEFF;
+        font-weight: bold;
+        color: rgba(0,0,0,0.333);
+      }
+      pre {
+          display: inline;
+          margin: 0;
+          padding: 0.25em 0;
+          line-height: 1.7em;
+      }
+      .covered {
+        background-color: rgba(143, 188, 143, 0.5);
+      }
+      .not-covered {
+        background-color: rgba(244, 67, 54, 0.5);
+      }
+      .ignored {
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="lines">
+      <pre>%{lines}</pre>
+    </div>
+    <div id="code">%{style_sheet}</div>
+  </body>
+</html>
