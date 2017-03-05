@@ -3,12 +3,14 @@ require 'cgi'
 
 module Marmara
   TMP_FILE = File.join(Dir.tmpdir, 'marmara.json')
-  LOG_DIR = 'log/css'
 
   class << self
+    attr_accessor :output_directory
+
     def start_recording
-      FileUtils.rm_rf(LOG_DIR)
-      FileUtils.mkdir_p(LOG_DIR)
+      @output_directory ||= 'log/css'
+      FileUtils.rm_rf(output_directory)
+      FileUtils.mkdir_p(output_directory)
       FileUtils.rm(TMP_FILE) if File.exists?(TMP_FILE)
       ENV['_marmara_record'] = '1'
     end
@@ -24,7 +26,7 @@ module Marmara
     end
 
     def get_mached_css_rules
-      @get_mached_css_rules_js ||= File.read(File.join(File.dirname(__FILE__), 'marmara', 'get-matches-css-rules.js'))
+      @get_mached_css_rules_js ||= File.read(File.join(File.dirname(__FILE__), 'marmara', 'get-matched-css-rules.js'))
     end
 
     def normalize_rule_js
@@ -173,7 +175,7 @@ module Marmara
           sheet_html += states[:not_covered] + uncovered_str + end_covered if uncovered_str
           sheet_html.gsub!(/\n/, '<br>')
           lines = (1..original_sheet.lines.count).to_a.join("\n")
-          File.open(File.join(LOG_DIR, File.basename(uri) + '.html'), 'wb') do |f|
+          File.open(File.join(output_directory, File.basename(uri) + '.html'), 'wb') do |f|
             f.write("
               <!DOCTYPE html>
               <html>
