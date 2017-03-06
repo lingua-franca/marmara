@@ -78,6 +78,7 @@ AfterStep do
     Marmara.record(page)
     page.driver.resize_window(*old_size)
   end
+end
 ```
 
 ### 3. Stop recording and generate your output
