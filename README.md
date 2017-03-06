@@ -1,7 +1,7 @@
 # Marmara
 Marmara is a Ruby Gem that analyses your css during UI testing and generates a code coverage report.
 
-![Alt text](https://i.imgur.com/sLQIJcr.png)
+![Alt text](https://i.imgur.com/zX9SSuF.png)
 
 ## Set up
 This project has yet only been set up in a Rails Capybara/Poltergeist environment, more work may need to be done to get it woking in other environment.
@@ -49,8 +49,4 @@ end
 ```
 
 ## Development plan
-This project is currently in development, please feel free to send pull requests, there's a lot more work to be done.
-
-### TODO
-1. before and after selector
-1. find unused sub selectors
+This project is currently in a "works in my project" stage, there's still work to be done to make it more vendable so I welcome pull requests. In addition, there are probably a lot of tweaks required to the parser and a lot of features that would be nice to have.
