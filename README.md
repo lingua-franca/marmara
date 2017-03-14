@@ -136,4 +136,4 @@ Marmara.output_directory = '../build/logs'
 Marmara.start_recording
 ```
 
-Set the `output_directory` before you start recording and you should find your HTML reports located in the directory you provided.
+Set the `output_directory` before you start recording and you should find your HTML reports located in the directory you provided. *Note that this directory will removed and re-created each time the tests are run.*
