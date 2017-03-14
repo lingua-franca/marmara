@@ -75,3 +75,65 @@ at_exit do
 end
 ```
 
+You can also integrate with your existing tests to run all of the time if you like. To do that you can simply include `Marmara.start_recording` near the top of your `env.rb` file.
+
+## Execution
+
+If you're using a rake task like I have described above, simply execute:
+
+```bash
+rake css:cover
+```
+
+You should see your tests exceute normally but after your tests complete you should see:
+
+```bash
+Compiling CSS coverage report...
+
+    application.css:
+              Rules: 50/100 (50.00%)
+              Selectors:  75/200 (37.50%)
+              Declarations:  333/500 (66.67%)
+
+    fonts.css:
+              Rules: 2/2 (100.00%)
+              Selectors:  0/0 (NaN%)
+              Declarations:  2/2 (100.00%)
+
+    Overall:
+              Rules: 52/102 (50.98%)
+              Selectors:  75/200 (37.50%)
+              Declarations:  2/2 (66.73%)
+```
+
+A **rule** is matched whenever at least one selector is covered, each **selector** within a rule is covered independently, **declarations** are each property and value pair within a rule.
+
+You should now be able to find coverage report in your `log/css` directory. In the example above you should expect to find the files:
+
+```PowerShell
+[my_app]
+  ├ [app]
+  │   └ # ...
+  ├ [log]
+  │   ├ [css]
+  │   │   ├ application.css.html
+  │   │   └ fonts.css.html
+  │   ├ # application.log
+  │   └ # ...
+  └ [spec]
+      └ # ...
+```
+
+Open `application.css.html` or `fonts.css.html` in your browser to display your line coverage report.
+
+## Configuration
+
+### Output location
+You can change the output location of your coverage reports by setting:
+
+```Ruby
+Marmara.output_directory = '../build/logs'
+Marmara.start_recording
+```
+
+Set the `output_directory` before you start recording and you should find your HTML reports located in the directory you provided.
