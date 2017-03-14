@@ -67,20 +67,6 @@ AfterStep do
 end
 ```
 
-Since I also want to capture used selectors for mobile, my after step looks more like this:
-
-```ruby
-AfterStep do
-  if Marmara.recording?
-    Marmara.record(page)
-    old_size = page.driver.browser.client.window_size
-    page.driver.resize_window(600, 400)
-    Marmara.record(page)
-    page.driver.resize_window(*old_size)
-  end
-end
-```
-
 ### 3. Stop recording and generate your output
 
 ```ruby
