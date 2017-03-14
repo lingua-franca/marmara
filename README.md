@@ -1,7 +1,7 @@
 # Marmara
 Marmara is a Ruby Gem that analyses your css during UI testing and generates a code coverage report.
 
-![Alt text](https://i.imgur.com/zX9SSuF.png)
+![Example screenshot of Marmara output](https://i.imgur.com/N7J6wjD.png)
 
 ## Why is CSS code coverage important?
 CSS code coverage is a little different than traditional code coverage.
@@ -89,5 +89,3 @@ at_exit do
 end
 ```
 
-## Development plan
-This project is currently in a "works in my project" stage, there's still work to be done to make it more vendable so I welcome pull requests. In addition, there are probably a lot of tweaks required to the parser and a lot of features that would be nice to have.
