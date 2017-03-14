@@ -9,10 +9,14 @@ Gem::Specification.new do |gem|
   gem.homepage      = "http://bikecollectives.org"
   gem.licenses      = ["MIT"]
 
-  gem.files         = Dir["{lib}/**/*", "MIT-LICENSE", "Rakefile", "README.rdoc"]
+  gem.files         = Dir["{lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   gem.require_paths = ["lib"]
   gem.version       = '1.0'
 
-  gem.add_dependency('css_parser', '>= 1.4.7')
-  # gem.add_dependency "diffy"
+  gem.add_dependency('css_parser', '>= 1.5.0.pre')
+
+  gem.add_development_dependency 'bundler'
+  gem.add_development_dependency 'rake'
+  gem.add_development_dependency 'rspec'
+  gem.add_development_dependency 'yard'
 end

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link href="https://fonts.googleapis.com/css?family=Cutive+Mono" rel="stylesheet">
     <style type="text/css">
       body {
@@ -12,30 +13,59 @@
           white-space: nowrap;
       }
       #lines {
+        position: relative;
         float: left;
-        padding: 0 0.5em;
+        padding: 0 0.75em 0 0.5em;
         text-align: right;
-        border-right: 0.1em solid #888;
-        background-color: #7ADEFF;
         font-weight: bold;
-        color: rgba(0,0,0,0.333);
+        color: rgba(0, 0, 0, 0.125);
+        letter-spacing: -0.125em;
+        transition: color 150ms ease-in-out;
+        cursor:  default;
+      }
+      #lines:hover, #lines a:target {
+        color: rgba(0, 0, 0, 0.75);
+      }
+      #lines a {
+        color: inherit;
+        text-decoration: none;
+        display: block;
+      }
+      #lines a:hover::after, #lines a:target::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        width: 100vw;
+        background-color: #00BFFF;
+        height: 1.6em;
+        opacity: 0.25;
+      }
+      #lines a:hover::after {
+        background-color: #BDB76B;
       }
       pre {
         font-family: 'Cutive Mono', monospace;
           display: inline;
           margin: 0;
-          padding: 0.25em 0;
+          padding: 0;
           line-height: 1.65em;
       }
+      pre > span {
+        position: relative;
+        z-index: 1;
+        color: #333;
+      }
       .covered {
-        background-color: rgba(143, 188, 143, 0.5);
+        color: #AEE6B0;
       }
       .not-covered {
-        background-color: rgba(244, 67, 54, 0.5);
+        color: #F79B95;
       }
       .covered, .not-covered {
-        border-radius: 0.5em 0 0.5em 0;
+        background-color: currentColor;
         text-shadow: 0 0 0.25em #FFF;
+        font-weight: bold;
+        padding: 0.25em 0;
       }
       .ignored {
         color: #888;
