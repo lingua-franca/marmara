@@ -74,7 +74,7 @@ module Marmara
               rule.each_selector do |sel, dec, spec|
                 if sel.length > 0
                   # we need to look for @keyframes and @font-face coverage differently
-                  if sel.first == '@'
+                  if sel[0] == '@'
                     rule_type = sel[1..-1]
                     at_rule = {
                         rule: rule,
@@ -89,9 +89,14 @@ module Marmara
                       at_rule[:property] = ["#{$1}animation-name", "#{$1}animation"]
                       at_rule[:value] = $2
                       at_rule[:valueRegex] = [/(?:^|,)\s*(?:#{Regexp.escape(at_rule[:value])})\s*(?:,|;?$)/, /(?:^|\s)(?:#{Regexp.escape(at_rule[:value])})(?:\s|;?$)/]
+                    when /^(\-moz\-document|supports)/
+                      # ignore these types
+                      at_rule[:used] = true
                     end
 
-                    at_rule[:valueRegex] ||= /(?:^|,)\s*(?:#{Regexp.escape(at_rule[:value])}|\"#{Regexp.escape(at_rule[:value])}\")\s*(?:,|;?$)/
+                    if at_rule[:value]
+                      at_rule[:valueRegex] ||= /(?:^|,)\s*(?:#{Regexp.escape(at_rule[:value])}|\"#{Regexp.escape(at_rule[:value])}\")\s*(?:,|;?$)/
+                    end
 
                     # store all the info that we collected about the rule
                     @style_sheet_rules[sheet] << at_rule
@@ -457,12 +462,19 @@ module Marmara
       # collect the sheet html
       coverage.each do |rule|
         sheet_html += wrap_code(original_sheet.byteslice(last_index...rule[:offset][0]), :ignored)
-        sheet_html += wrap_code(original_sheet.byteslice(rule[:offset][0]..rule[:offset][1]), rule[:state])
+        sheet_html += wrap_code(original_sheet.byteslice(rule[:offset][0]...rule[:offset][1]), rule[:state])
         last_index = rule[:offset][1] + 1
       end
 
-      sheet_html += wrap_code(original_sheet[last_index..original_sheet.length], :ignored)
+      # finish off the rest of the file
+      if last_index < original_sheet.length
+        sheet_html += wrap_code(original_sheet[last_index...original_sheet.length], :ignored)
+      end
+
+      # replace line returns with HTML line breaks
       sheet_html.gsub!(/\n/, '<br>')
+
+      # build the lines section
       lines = (1..original_sheet.lines.count).to_a.map do |line|
         "<a href=\"#L#{line}\" id=\"L#{line}\">#{line}</a>"
       end
