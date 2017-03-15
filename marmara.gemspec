@@ -11,7 +11,7 @@ Gem::Specification.new do |gem|
 
   gem.files         = Dir["{lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   gem.require_paths = ["lib"]
-  gem.version       = '1.0'
+  gem.version       = '1.0.1'
 
   gem.add_dependency('css_parser', '>= 1.5.0.pre')
 
@@ -19,4 +19,6 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec'
   gem.add_development_dependency 'yard'
+  gem.add_development_dependency 'capybara'
+  gem.add_development_dependency 'poltergeist'
 end

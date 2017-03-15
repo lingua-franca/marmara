@@ -1,7 +1,6 @@
 require 'open-uri'
 require 'cgi'
-require 'cgi'
-require 'css_parser'
+require 'marmara/parser'
 
 module Marmara
 
@@ -61,9 +60,11 @@ module Marmara
 
           parser = nil
           begin
-            parser = CssParser::Parser.new
+            parser = CssParser::MarmaraParser.new
             parser.load_uri!(sheet, capture_offsets: true)
-          rescue
+          rescue Exception => e
+            puts e.to_s
+            puts "\t" + e.backtrace.join("\n\t")
             log "Error reading #{sheet}"
           end
 
@@ -96,10 +97,10 @@ module Marmara
 
                     if at_rule[:value]
                       at_rule[:valueRegex] ||= /(?:^|,)\s*(?:#{Regexp.escape(at_rule[:value])}|\"#{Regexp.escape(at_rule[:value])}\")\s*(?:,|;?$)/
-                    end
 
-                    # store all the info that we collected about the rule
-                    @style_sheet_rules[sheet] << at_rule
+                      # store all the info that we collected about the rule
+                      @style_sheet_rules[sheet] << at_rule
+                    end
                   else
                     # just a regular selector, collect it
                     selectors << {
@@ -128,7 +129,7 @@ module Marmara
 
             # store info about the stylesheet
             @style_sheets[sheet] = {
-              css: download_style_sheet(sheet),
+              css: parser.last_file_contents,
               all_selectors: all_selectors,
               all_at_rules: all_at_rules,
               included_with: Set.new
@@ -290,7 +291,7 @@ module Marmara
     end
 
     def get_report_filename(uri)
-      File.basename(uri)
+      File.basename(uri).gsub(/^(.*?)\?.*$/, '\1')
     end
 
     def is_property_covered(sheets, property, valueRegex)
@@ -366,21 +367,25 @@ module Marmara
               covered_selectors += rule[:used_selectors].count
             else
               original_selectors, = @style_sheets[uri][:css].byteslice(rule[:rule].offset).split(/\s*\{/, 2)
-              selector_i = 0
 
-              original_selectors.scan(/(?<=^|,)\s*(.*?)\s*(?=,|$)/m) do |match|
+              selectors_length = 0
+              original_selectors.split(/,/m).each_with_index do |sel, selector_i|
+                sel_length = sel.length
+                sel_length += 1 unless selector_i == (rule[:used_selectors].length - 1)
+
                 is_covered = rule[:used_selectors][selector_i] ? :covered : :not_covered
                 covered_selectors += 1 if is_covered
                 sheet_covered_rules << {
                   offset: [
-                      coverage[:offset][0] + Regexp.last_match.offset(0).first,
-                      coverage[:offset][0] + Regexp.last_match.offset(0).last
+                      coverage[:offset][0] + selectors_length,
+                      coverage[:offset][0] + selectors_length + sel_length
                     ],
                   state: is_covered
                 }
-                selector_i += 1
+                selectors_length += sel_length
               end
-              coverage[:offset][0] += original_selectors.length + 1
+
+              coverage[:offset][0] += original_selectors.length
             end
           else
             rule[:rule].each_declaration do
@@ -463,7 +468,7 @@ module Marmara
       coverage.each do |rule|
         sheet_html += wrap_code(original_sheet.byteslice(last_index...rule[:offset][0]), :ignored)
         sheet_html += wrap_code(original_sheet.byteslice(rule[:offset][0]...rule[:offset][1]), rule[:state])
-        last_index = rule[:offset][1] + 1
+        last_index = rule[:offset][1]
       end
 
       # finish off the rest of the file
@@ -472,10 +477,10 @@ module Marmara
       end
 
       # replace line returns with HTML line breaks
-      sheet_html.gsub!(/\n/, '<br>')
+      sheet_html.gsub!(/\r?\n/, '<br>')
 
       # build the lines section
-      lines = (1..original_sheet.lines.count).to_a.map do |line|
+      lines = (1..original_sheet.lines.count + 1).to_a.map do |line|
         "<a href=\"#L#{line}\" id=\"L#{line}\">#{line}</a>"
       end
       get_style_sheet_html.gsub('%{lines}', lines.join('')).gsub('%{style_sheet}', sheet_html)
