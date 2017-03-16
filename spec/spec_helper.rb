@@ -13,11 +13,8 @@ end
 
 Capybara.current_driver = :poltergeist
 Capybara.javascript_driver = :poltergeist
-# Capybara.run_server = false
-# Capybara.app_host = 'https://www.google.com'
 
 RSpec.configure do |config|
   config.include Marmara
-  # config.include Capybara
   config.include Capybara::DSL
 end
