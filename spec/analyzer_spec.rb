@@ -14,11 +14,11 @@ end
 
 describe Marmara do
   def load_test(file, variant = nil)
-    visit ('file:///' + File.expand_path("spec/fixtures/pages/#{file.gsub(/\-/, '_')}/#{[file, variant].compact.join('.')}.html"))
+    visit_local "spec/fixtures/pages/#{file.gsub(/\-/, '_')}/#{[file, variant].compact.join('.')}.html"
   end
 
   def load_result(file, variant = nil)
-    visit ('file:///' + File.expand_path("#{@output_dir}/#{[file, variant].compact.join('.')}.css.html"))
+    visit_local "#{@output_dir}/#{[file, variant].compact.join('.')}.css.html"
   end
 
   before(:all) do

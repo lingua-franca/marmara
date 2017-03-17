@@ -14,6 +14,10 @@ end
 Capybara.current_driver = :poltergeist
 Capybara.javascript_driver = :poltergeist
 
+def visit_local(file)
+  visit ('file:' + ('/' * (Gem.win_platform? ? 3 : 4)) + File.expand_path(file))
+end
+
 RSpec.configure do |config|
   config.include Marmara
   config.include Capybara::DSL
