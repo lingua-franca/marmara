@@ -33,7 +33,7 @@ describe Marmara do
     Marmara.logger = @logger = TestLogger.new
   end
 
-  describe 'Test' do
+  describe 'output' do
     it 'should compile a simple style sheet' do
       Marmara.start_recording
       load_test 'mass-communication'
@@ -151,10 +151,10 @@ describe Marmara do
     it 'should create subdirectories as needed' do
       Marmara.options = {
         ignore: [/googleapis\.com/],
-        rewrite: [{
+        rewrite: {
           from: /^.*\/style_guide\/(style)\-guide\.css/,
           to: 'application/\1'
-        }]
+        }
       }
       Marmara.start_recording
       load_test 'style-guide'
@@ -168,6 +168,116 @@ describe Marmara do
       expect(@logger.logs[9].strip).to eq('')
 
       expect(File.exist?("#{@output_dir}/application/style.html")).to be
+    end
+  end
+
+  describe 'assertions' do
+    # Rules: 58/213 (27.23%)
+    # Selectors: 152/309 (49.19%)
+    # Declarations: 190/483 (39.34%)
+
+    it 'fail if minimum rule coverage is set and not met' do
+      Marmara.options = {
+        ignore: [/font\-awesome\.css/],
+        minimum: {
+          rules: 28
+        }
+      }
+      Marmara.start_recording
+      load_test 'css-menu'
+      Marmara.record(page)
+
+      expect { Marmara.stop_recording }.to raise_error(Marmara::MinimumRuleCoverageNotMet)
+    end
+
+    it 'do not fail if minimum rule coverage is set but is met' do
+      Marmara.options = {
+        ignore: [/font\-awesome\.css/],
+        minimum: {
+          rules: 27
+        }
+      }
+      Marmara.start_recording
+      load_test 'css-menu'
+      Marmara.record(page)
+
+      Marmara.stop_recording
+    end
+
+    it 'do not fail if minimum rule coverage not met because of ignored files' do
+      Marmara.options = {
+        ignore: [/font\-awesome\.css/, /mass\-communication\.css/],
+        minimum: {
+          rules: 100
+        }
+      }
+      Marmara.start_recording
+      load_test 'css-menu'
+      Marmara.record(page)
+
+      Marmara.stop_recording
+    end
+
+    it 'fail if minimum selector coverage not met' do
+      Marmara.options = {
+        ignore: [/font\-awesome\.css/],
+        minimum: {
+          rules: 27,
+          selectors: 50
+        }
+      }
+      Marmara.start_recording
+      load_test 'css-menu'
+      Marmara.record(page)
+
+      expect { Marmara.stop_recording }.to raise_error(Marmara::MinimumSelectorCoverageNotMet)
+    end
+
+    it 'do not fail if minimum selector coverage is met' do
+      Marmara.options = {
+        ignore: [/font\-awesome\.css/],
+        minimum: {
+          rules: 27,
+          selectors: 49
+        }
+      }
+      Marmara.start_recording
+      load_test 'css-menu'
+      Marmara.record(page)
+
+      Marmara.stop_recording
+    end
+
+    it 'fail if minimum declaration coverage not met' do
+      Marmara.options = {
+        ignore: [/font\-awesome\.css/],
+        minimum: {
+          rules: 27,
+          selectors: 49,
+          declarations: 40
+        }
+      }
+      Marmara.start_recording
+      load_test 'css-menu'
+      Marmara.record(page)
+
+      expect { Marmara.stop_recording }.to raise_error(Marmara::MinimumDeclarationCoverageNotMet)
+    end
+
+    it 'do not fail if minimum declaration coverage is met' do
+      Marmara.options = {
+        ignore: [/font\-awesome\.css/],
+        minimum: {
+          rules: 27,
+          selectors: 49,
+          declarations: 39
+        }
+      }
+      Marmara.start_recording
+      load_test 'css-menu'
+      Marmara.record(page)
+
+      Marmara.stop_recording
     end
   end
 end

@@ -1,13 +1,24 @@
 module Marmara
   module Config
-    attr_accessor :options
+    attr_reader :options
+
+    def options=(opts)
+      if @options
+        if @options[:output_directory]
+          opts[:output_directory] ||= @options[:output_directory]
+        end
+      end
+
+      @options = opts
+    end
 
     def output_directory
-      @output_directory || (options || {output_directory: 'log/css'})[:output_directory]
+      (options || {})[:output_directory] || 'log/css'
     end
 
     def output_directory=(dir)
-      @output_directory = dir
+      @options ||= {}
+      @options[:output_directory] = dir
     end
 
     def logger=(logger)
@@ -37,8 +48,10 @@ module Marmara
     end
 
     def get_report_filename(uri)
-      if options
-        [*options[:rewrite]].each do |rule|
+      if options && options[:rewrite]
+        rewrite_rules = options[:rewrite]
+        rewrite_rules = [rewrite_rules] unless rewrite_rules.is_a?(Array)
+        rewrite_rules.each do |rule|
           return uri.gsub(rule[:from], rule[:to]) if uri =~ rule[:from]
         end
       end

@@ -1,4 +1,4 @@
-# Marmara
+# Marmara [![Build Status](https://travis-ci.org/lingua_franca/marmara.png?branch=master)](https://travis-ci.org/lingua_franca/marmara) [![Gem Version](https://badge.fury.io/rb/marmara.svg)](https://badge.fury.io/rb/marmara)
 Marmara is a Ruby Gem that analyses your css during UI testing and generates a code coverage report.
 
 ![Example screenshot of Marmara output](https://i.imgur.com/N7J6wjD.png)
@@ -136,4 +136,58 @@ Marmara.output_directory = '../build/logs'
 Marmara.start_recording
 ```
 
+You can also pass the output directory as an value to the options hash:
+
+```Ruby
+Marmara.options = {
+  output_directory: '../build/logs'
+}
+```
+
 Set the `output_directory` before you start recording and you should find your HTML reports located in the directory you provided. *Note that this directory will removed and re-created each time the tests are run.*
+
+### Ignoring Files
+You can ignore files by passing a string, regular expression, or array or strings or regular expressions using the `:ignore` option:
+
+```Ruby
+# Ignore all files coming from http://fonts.googleapis.com/
+Marmara.options = {
+  ignore: 'http://fonts.googleapis.com/'
+}
+
+# Ignore all files containing 'google'
+Marmara.options = {
+  ignore: /google/
+}
+
+# Ignore all files containing google or adobe
+Marmara.options = {
+  ignore: [/google/, /adobe/]
+}
+
+# Ignore a specific file
+Marmara.options = {
+  ignore: /font\-awesome\.css$/
+}
+```
+
+### Setting minimum coverage
+By default Marmara will not cause your tests to fail even if you have 0% coverage. To enable this, set the `:minimum` option:
+
+```Ruby
+Marmara.options = {
+  minimum: {
+    rules: 80,
+    selectors: 90,
+    declarations: 90
+  }
+ }
+```
+
+The values represent persentages and each value is optional, if a value is not present the resepctive assertion will not be made.
+
+If the respective overall coverage percentage doest not meet your minimum, your tests should fail and you should see a message that looks like:
+
+```bash
+Failed to meet minimum CSS rule coverage of 80%
+```

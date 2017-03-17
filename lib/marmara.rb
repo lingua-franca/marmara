@@ -2,6 +2,7 @@ require 'open-uri'
 require 'cgi'
 require 'marmara/parser'
 require 'marmara/config'
+require 'marmara/exceptions'
 
 module Marmara
 
@@ -189,13 +190,17 @@ module Marmara
       @last_driver.evaluate_script(script)
     end
 
+    def stat_types
+      @stat_types ||= ['Rule', 'Selector', 'Declaration']
+    end
+
     def analyze
       # start compiling the overall stats
-      overall_stats = {
-          'Rules' => { match_count: 0, total: 0 },
-          'Selectors' => { match_count: 0, total: 0 },
-          'Declarations' => { match_count: 0, total: 0 }
-        }
+      overall_stats = {}
+
+      stat_types.each do |type|
+        overall_stats["#{type}s"] = { match_count: 0, total: 0 }
+      end
 
       # go through all of the style sheets found
       #get_latest_results.each do |uri, rules|
@@ -209,29 +214,20 @@ module Marmara
           # and generate the report
           html = generate_html_report(original_sheet, coverage[:covered_rules])
 
-          # output stats for this file
-          log_stats(get_report_filename(uri), {
-              'Rules' => {
-                match_count: coverage[:matched_rules],
-                total: coverage[:total_rules]
-              },
-              'Selectors' => {
-                match_count: coverage[:matched_selectors],
-                total: coverage[:total_selectors]
-              },
-              'Declarations' => {
-                match_count: coverage[:matched_declarations],
-                total: coverage[:total_declarations]
+          stats_to_log = {}
+          stat_types.each do |type|
+            stats_to_log["#{type}s"] = {
+                match_count: coverage["matched_#{type.downcase}s".to_sym],
+                total: coverage["total_#{type.downcase}s".to_sym]
               }
-            })
 
-          # add to the overall stats
-          overall_stats['Rules'][:match_count] += coverage[:matched_rules]
-          overall_stats['Rules'][:total] += coverage[:total_rules]
-          overall_stats['Selectors'][:match_count] += coverage[:matched_selectors]
-          overall_stats['Selectors'][:total] += coverage[:total_selectors]
-          overall_stats['Declarations'][:match_count] += coverage[:matched_declarations]
-          overall_stats['Declarations'][:total] += coverage[:total_declarations]
+            # add to the overall stats
+            overall_stats["#{type}s"][:match_count] += coverage["matched_#{type.downcase}s".to_sym]
+            overall_stats["#{type}s"][:total] += coverage["total_#{type.downcase}s".to_sym]
+          end
+
+          # output stats for this file
+          log_stats(get_report_filename(uri), stats_to_log)
 
           # save the report
           save_report(uri, html)
@@ -240,51 +236,16 @@ module Marmara
 
       log_stats('Overall', overall_stats)
       log "\n"
-    end
 
-    def download_style_sheet(uri)
-      open_attempts = 0
-      begin
-        open_attempts += 1
-        uri = Addressable::URI.parse(uri.to_s)
-
-        # remote file
-        if uri.scheme == 'https'
-          uri.port = 443 unless uri.port
-          http = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl = true
-          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        else
-          http = Net::HTTP.new(uri.host, uri.port)
+      # check for minimum coverage
+      if options && options[:minimum]
+        stat_types.each do |type|
+          Marmara.const_get("Minimum#{type}CoverageNotMet").assert(
+              options[:minimum]["#{type.downcase}s".to_sym],
+              ((overall_stats["#{type}s"][:match_count] * 100.0) / overall_stats["#{type}s"][:total]).round(2)
+            )
         end
-
-        res = http.get(uri.request_uri, {'Accept-Encoding' => 'gzip'})
-        src = res.body.force_encoding("UTF-8")
-
-        case res['content-encoding']
-          when 'gzip'
-            io = Zlib::GzipReader.new(StringIO.new(res.body))
-            src = io.read
-          when 'deflate'
-            io = Zlib::Inflate.new
-            src = io.inflate(res.body)
-        end
-
-        if String.method_defined?(:encode)
-          src.encode!('UTF-8', 'utf-8')
-        else
-          ic = Iconv.new('UTF-8//IGNORE', 'utf-8')
-          src = ic.iconv(src)
-        end
-
-        return src
-      rescue Exception => e
-        sleep(1)
-        retry if open_attempts < 4
-        log "\tFailed to open #{uri}"
-        log e.to_s
       end
-      return nil
     end
 
     def save_report(uri, html)

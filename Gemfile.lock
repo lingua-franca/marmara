@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    marmara (1.0.1)
+    marmara (1.0.2)
       css_parser (>= 1.5.0.pre)
 
 GEM
