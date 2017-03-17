@@ -13,7 +13,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = '1.0.2'
 
-  gem.required_ruby_version = '>= 1.9.3'
+  gem.required_ruby_version = '>= 2.0'
 
   gem.add_dependency('css_parser', '>= 1.5.0.pre')
 
