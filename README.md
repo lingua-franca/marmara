@@ -1,4 +1,4 @@
-# Marmara [![Build Status](https://travis-ci.org/lingua_franca/marmara.png?branch=master)](https://travis-ci.org/lingua_franca/marmara) [![Gem Version](https://badge.fury.io/rb/marmara.svg)](https://badge.fury.io/rb/marmara)
+# Marmara [![Build Status](https://travis-ci.org/lingua-franca/marmara.svg?branch=master)](https://travis-ci.org/lingua_franca/marmara) [![Gem Version](https://badge.fury.io/rb/marmara.svg)](https://badge.fury.io/rb/marmara)
 Marmara is a Ruby Gem that analyses your css during UI testing and generates a code coverage report.
 
 ![Example screenshot of Marmara output](https://i.imgur.com/N7J6wjD.png)
